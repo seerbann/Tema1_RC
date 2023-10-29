@@ -25,11 +25,11 @@ int main()
             ok = 0;
         write(c2s, currCommand, sizeof(currCommand));
 
-        if (read(s2c, textToReceive, 10) != -1)
-        {
-            printf("%s",textToReceive);
-            printf("\n");
-        }
+       // if (read(s2c, textToReceive, 10) != -1)
+        //{
+          //  printf("%s",textToReceive);
+            //printf("\n");
+        //}
     }
     /* Close the FIFO */
     close(c2s);
