@@ -11,8 +11,8 @@
 #include <fstream>
 using namespace std;
 bool logged_in = false;
-const char *FIFO1 = "MY_FIFO_c2s";
-const char *FIFO2 = "MY_FIFO_s2c";
+const char *FIFOc2s = "FIFOc2s";
+const char *FIFOs2c = "FIFOs2c";
 int c2s;
 int s2c;
 vector<string> readUsersFromFile()
@@ -39,10 +39,13 @@ vector<string> readUsersFromFile()
 
 void init()
 {
-    mknod(FIFO1, S_IFIFO | 0666, 0);
-    c2s = open(FIFO1, O_RDONLY); // client to server , read only
-    mknod(FIFO2, S_IFIFO | 0666, 0);
-    s2c = open(FIFO2, O_WRONLY); // server to client , write only
+
+  mknod(FIFOc2s, S_IFIFO | 0666, 0);
+  mknod(FIFOs2c, S_IFIFO | 0666, 0);
+  printf("Establishing connection to client. \n");
+  c2s = open(FIFOc2s, O_RDONLY); // client -> server   =>    read only for server
+  s2c = open(FIFOs2c, O_WRONLY); // server -> client   =>    write only for server
+  printf("Connection to client established. \n");
 }
 
 int main()
@@ -50,37 +53,35 @@ int main()
     init();
     if (c2s == -1)
     {
-        fprintf(stderr, "Failed to open FIFO1\n");
-        unlink(FIFO1);
+        printf("Failed to open FIFO1\n");
+        unlink(FIFOc2s);
         return 1;
     }
     if (s2c == -1)
     {
-        fprintf(stderr, "Failed to open FIFO2\n");
-        unlink(FIFO2);
+        printf("Failed to open FIFO2\n");
+        unlink(FIFOs2c);
         return 1;
     }
     printf("Connection enabled\n");
     /* Main server loop */
 
-    char currCommand[1024];
+    char currCommand[] = "default";
     int bytes_read;
-
-    while (1)
+    while (strcmp(currCommand, "quit") != 0)
     {
-        bytes_read = read(c2s, currCommand, sizeof(currCommand));
+        bytes_read = read(c2s, currCommand, 20);
         if (bytes_read <= 0)
             break;
 
         /* If we read quit, quit; otherwise print valid comand */
-        if (strcasecmp(currCommand, "quit") == 0)
-            break;
-        else if (strcasecmp(currCommand, "login") == 0)
+        if (strcasecmp(currCommand, "login") == 0)
         {
             printf("loggin in");
             char textToSend[100];
             strcpy(textToSend, "default message");
-            write(s2c, textToSend, sizeof(textToSend));
+            int nOfChars = strlen(textToSend);
+            // write(s2c, textToSend, nOfChars);
         }
 
         else if (strcasecmp(currCommand, "get-logged-users") == 0)
@@ -92,6 +93,10 @@ int main()
         else
             printf("invalid command\n");
     }
-
+    printf("quiting\n");
     /* close and delete the c2s FIFO */
+    close(s2c);
+    unlink(FIFOs2c);
+    close(c2s);
+    unlink(FIFOc2s);
 }
