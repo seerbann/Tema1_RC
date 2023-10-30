@@ -8,33 +8,63 @@
 #include <unistd.h>
 #include <vector>
 #include <string>
+#include <fstream>
 using namespace std;
-vector<string> commands;
+bool logged_in = false;
+const char *FIFO1 = "MY_FIFO_c2s";
+const char *FIFO2 = "MY_FIFO_s2c";
+int c2s;
+int s2c;
+vector<string> readUsersFromFile()
+{
+    vector<string> users;
+    ifstream usersFile;
+
+    if (usersFile.is_open())
+    {
+        string user;
+        while (getline(usersFile, user))
+        {
+            users.push_back(user);
+        }
+        usersFile.close();
+    }
+    else
+    {
+        printf("Unable to open file");
+    }
+
+    return users;
+}
+
+void init()
+{
+    mknod(FIFO1, S_IFIFO | 0666, 0);
+    c2s = open(FIFO1, O_RDONLY); // client to server , read only
+    mknod(FIFO2, S_IFIFO | 0666, 0);
+    s2c = open(FIFO2, O_WRONLY); // server to client , write only
+}
+
 int main()
 {
-    /* Create the FIFO or die trying */
-    const char *FIFO1 = "MY_FIFO_c2s";
-    mknod(FIFO1, S_IFIFO | 0666, 0);
-    int c2s = open(FIFO1, O_RDONLY); // client to server , read only
-
-    const char *FIFO2 = "MY_FIFO_s2c";
-    mknod(FIFO2, S_IFIFO | 0666, 0);
-    int s2c = open(FIFO2, O_WRONLY); // server to client , write only
-
-    /* Try to open the FIFO. Delete FIFO if open() fails */
-
+    init();
     if (c2s == -1)
     {
-        fprintf(stderr, "Failed to open FIFO\n");
+        fprintf(stderr, "Failed to open FIFO1\n");
         unlink(FIFO1);
         return 1;
     }
-
+    if (s2c == -1)
+    {
+        fprintf(stderr, "Failed to open FIFO2\n");
+        unlink(FIFO2);
+        return 1;
+    }
+    printf("Connection enabled\n");
     /* Main server loop */
 
     char currCommand[1024];
     int bytes_read;
-    char textToSend[100];
 
     while (1)
     {
@@ -47,6 +77,9 @@ int main()
             break;
         else if (strcasecmp(currCommand, "login") == 0)
         {
+            printf("loggin in");
+            char textToSend[100];
+            strcpy(textToSend, "default message");
             write(s2c, textToSend, sizeof(textToSend));
         }
 
@@ -60,10 +93,5 @@ int main()
             printf("invalid command\n");
     }
 
-    /* close and delete the FIFOs */
-    close(c2s);
-    close(s2c);
-    printf("Deleting FIFOs\n");
-    unlink(FIFO1);
-    unlink(FIFO2);
+    /* close and delete the c2s FIFO */
 }
