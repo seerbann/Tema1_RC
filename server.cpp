@@ -7,8 +7,9 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
-#include <string>
+#include <strings.h>
 #include <fstream>
+#include <iostream>
 using namespace std;
 bool logged_in = false;
 const char *FIFOc2s = "FIFOc2s";
@@ -40,60 +41,76 @@ vector<string> readUsersFromFile()
 void init()
 {
 
-  mknod(FIFOc2s, S_IFIFO | 0666, 0);
-  mknod(FIFOs2c, S_IFIFO | 0666, 0);
-  printf("Establishing connection to client. \n");
-  c2s = open(FIFOc2s, O_RDONLY); // client -> server   =>    read only for server
-  s2c = open(FIFOs2c, O_WRONLY); // server -> client   =>    write only for server
-  printf("Connection to client established. \n");
+    mknod(FIFOc2s, S_IFIFO | 0666, 0);
+    mknod(FIFOs2c, S_IFIFO | 0666, 0);
+    c2s = open(FIFOc2s, O_RDONLY); // client -> server,  read only for server
+    s2c = open(FIFOs2c, O_WRONLY); // server -> client,   write only for server
+    if (c2s == -1)
+        printf("c2s not working\n");
+    if (s2c == -1)
+        printf("s2c not working\n");
+    printf("Connection enabled. \n");
 }
 
+void login()
+{
+    int numberCharacters = 11;
+    write(s2c, &numberCharacters, sizeof(int));
+    if (write(s2c, "username: ", numberCharacters) == -1) /// writing to client to say username
+        perror("[login/parent] Eroare la scrierea prompt-ului username catre client\n");
+    else
+        printf("[login/parent] Am scris catre client: username. \n");
+}
+
+void sendMessageToClient(const char *message)
+{
+    printf("sending a message to client\n");
+    int messageLength = strlen(message);
+    if (write(s2c, &messageLength, 4) == -1)
+        printf("error line 70\n");
+
+    if (write(s2c, message, messageLength) == -1)
+        printf("error line 72");
+}
+
+int ok = 1;
 int main()
 {
     init();
-    if (c2s == -1)
-    {
-        printf("Failed to open FIFO1\n");
-        unlink(FIFOc2s);
-        return 1;
-    }
-    if (s2c == -1)
-    {
-        printf("Failed to open FIFO2\n");
-        unlink(FIFOs2c);
-        return 1;
-    }
-    printf("Connection enabled\n");
     /* Main server loop */
 
-    char currCommand[] = "default";
+    char currCommand[50] = "";
+    char newCurrCommand[] = "";
     int bytes_read;
+    int numberOfChars_rec = 0;
     while (strcmp(currCommand, "quit") != 0)
     {
-        bytes_read = read(c2s, currCommand, 20);
+        read(c2s, &numberOfChars_rec, sizeof(numberOfChars_rec));
+        // reseting the buffer
+        memset(currCommand, 0, sizeof(currCommand));
+        bytes_read = read(c2s, &currCommand, numberOfChars_rec);
         if (bytes_read <= 0)
             break;
-
+        currCommand[strlen(currCommand)] = '\0';
         /* If we read quit, quit; otherwise print valid comand */
-        if (strcasecmp(currCommand, "login") == 0)
+        if (strcmp(currCommand, "login") == 0)
         {
-            printf("loggin in");
-            char textToSend[100];
-            strcpy(textToSend, "default message");
-            int nOfChars = strlen(textToSend);
-            // write(s2c, textToSend, nOfChars);
+            sendMessageToClient("[server]logging in..\n");
         }
 
-        else if (strcasecmp(currCommand, "get-logged-users") == 0)
-            printf("get-logged-users\n");
+        else if (strcmp(currCommand, "get-logged-users") == 0)
+            sendMessageToClient("[server] getting info..\n");
         else if (strcasecmp(currCommand, "get-proc-info") == 0)
-            printf("get-proc-info\n");
+            sendMessageToClient("[server] getting info..\n");
         else if (strcasecmp(currCommand, "logout") == 0)
-            printf("logout\n");
+            sendMessageToClient("[server]logging out..\n");
+        else if (strcasecmp(currCommand, "quit") == 0)
+            sendMessageToClient("[server]quiting\n");
+
         else
-            printf("invalid command\n");
+            sendMessageToClient("[server] invalid request\n");
     }
-    printf("quiting\n");
+    printf("[server]quiting\n");
     /* close and delete the c2s FIFO */
     close(s2c);
     unlink(FIFOs2c);
