@@ -2,7 +2,8 @@
     "files.associations": {
         "*.tcc": "cpp",
         "iostream": "cpp",
-        "system_error": "cpp"
+        "system_error": "cpp",
+        "algorithm": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }

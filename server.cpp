@@ -16,26 +16,34 @@ const char *FIFOc2s = "FIFOc2s";
 const char *FIFOs2c = "FIFOs2c";
 int c2s;
 int s2c;
-vector<string> readUsersFromFile()
+char users[50][50];
+int usersCount = 0;
+int readUsersFromFile()
 {
-    vector<string> users;
-    ifstream usersFile;
-
-    if (usersFile.is_open())
+    FILE *file = fopen("users.txt", "r");
+    if (file == NULL)
     {
-        string user;
-        while (getline(usersFile, user))
-        {
-            users.push_back(user);
-        }
-        usersFile.close();
-    }
-    else
-    {
-        printf("Unable to open file");
+        printf("File could not be opened\n");
+        return -1;
     }
 
-    return users;
+    while (usersCount < 50 && fscanf(file, "%49s", users[usersCount]) == 1)
+    {
+        usersCount++;
+    }
+
+    fclose(file);
+    return usersCount; // Return the number of users read
+}
+
+bool isUser(const char *username)
+{
+    for (int i = 0; i < usersCount; i++)
+    {
+        if (strcmp(username, users[i]) == 0)
+            return true;
+    }
+    return false;
 }
 
 void init()
@@ -54,12 +62,15 @@ void init()
 
 void login()
 {
-    int numberCharacters = 11;
-    write(s2c, &numberCharacters, sizeof(int));
-    if (write(s2c, "username: ", numberCharacters) == -1) /// writing to client to say username
-        perror("[login/parent] Eroare la scrierea prompt-ului username catre client\n");
-    else
-        printf("[login/parent] Am scris catre client: username. \n");
+    
+    printf("sending a message to client\n");
+    char message[]="default";
+    int messageLength = strlen(message);
+    if (write(s2c, &messageLength, 4) == -1)
+        printf("error line 70\n");
+
+    if (write(s2c, message, sizeof(message)) == -1)
+        printf("error line 72");
 }
 
 void sendMessageToClient(const char *message)
@@ -87,15 +98,18 @@ int main()
     {
         read(c2s, &numberOfChars_rec, sizeof(numberOfChars_rec));
         // reseting the buffer
+        printf("read1\n");
         memset(currCommand, 0, sizeof(currCommand));
         bytes_read = read(c2s, &currCommand, numberOfChars_rec);
+        printf("read2\n");
+
         if (bytes_read <= 0)
             break;
         currCommand[strlen(currCommand)] = '\0';
         /* If we read quit, quit; otherwise print valid comand */
         if (strcmp(currCommand, "login") == 0)
         {
-            sendMessageToClient("[server]logging in..\n");
+            login();
         }
 
         else if (strcmp(currCommand, "get-logged-users") == 0)
