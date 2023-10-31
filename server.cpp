@@ -62,15 +62,33 @@ void init()
 
 void login()
 {
-    
-    printf("sending a message to client\n");
-    char message[]="default";
+    int ok = 1;
+    char message[] = "username:";
     int messageLength = strlen(message);
     if (write(s2c, &messageLength, 4) == -1)
         printf("error line 70\n");
 
     if (write(s2c, message, sizeof(message)) == -1)
         printf("error line 72");
+
+    while (ok == 1)
+    {
+        char userTyped[] = "default";
+        int bytes_read = 0;
+        int numberOfChars_rec;
+        //sleep(5);
+        read(c2s, &numberOfChars_rec, sizeof(numberOfChars_rec));
+        memset(userTyped, 0, sizeof(userTyped));
+        bytes_read = read(c2s, userTyped, numberOfChars_rec);
+        if (bytes_read != 0)
+        {
+            
+            printf("user entered\n");
+            userTyped[strlen(userTyped)] = '\0';
+            printf("%s\n",userTyped);
+            ok = 0;
+        }
+    }
 }
 
 void sendMessageToClient(const char *message)
