@@ -63,7 +63,7 @@ void init()
 void login()
 {
     int ok = 1;
-    char message[] = "username:";
+    char message[] = "Enter your username:";
     int messageLength = strlen(message);
     if (write(s2c, &messageLength, 4) == -1)
         printf("error line 70\n");
@@ -71,23 +71,60 @@ void login()
     if (write(s2c, message, sizeof(message)) == -1)
         printf("error line 72");
 
-    while (ok == 1)
+    pid_t childProcess;
+    int pipefd[2];
+    if (pipe(pipefd) == -1)
+        exit(errno);
+    // 1 write
+    // 0 read
+    switch (childProcess = fork())
     {
+    case -1:
+    {
+        printf("eroare la fork");
+        break;
+    }
+    case 0: // copil
+    {
+        sleep(1);
+        char userChild[]="default";
+        close(pipefd[1]); // doar citeste
+        memset(userChild, 0, sizeof(userChild));
+        read(pipefd[0], userChild, 10);
+        userChild[strlen(userChild)] = '\0';
+        printf("citit de copil %s\n ", userChild);
+        close(pipefd[0]);
+        break;
+    }
+    default:
+    {                     // parinte
+        close(pipefd[0]); // doar scriem
+        
         char userTyped[] = "default";
-        int bytes_read = 0;
         int numberOfChars_rec;
-        //sleep(5);
-        read(c2s, &numberOfChars_rec, sizeof(numberOfChars_rec));
-        memset(userTyped, 0, sizeof(userTyped));
-        bytes_read = read(c2s, userTyped, numberOfChars_rec);
-        if (bytes_read != 0)
+        printf("IM in PARENT proc\n");
+        while (ok == 1)
         {
-            
-            printf("user entered\n");
-            userTyped[strlen(userTyped)] = '\0';
-            printf("%s\n",userTyped);
-            ok = 0;
+
+            int bytes_read = 0;
+            // citire user scris de client
+            read(c2s, &numberOfChars_rec, sizeof(numberOfChars_rec));
+
+            memset(userTyped, 0, sizeof(userTyped));
+            bytes_read = read(c2s, userTyped, numberOfChars_rec);
+            if (bytes_read != 0)
+            {
+                printf("user entered: ");
+                userTyped[strlen(userTyped)] = '\0';
+                printf("%s", userTyped);
+                ok = 0;
+                // scriere user catre proces copil prin pipe
+                write(pipefd[1], userTyped, numberOfChars_rec);
+            }
         }
+        close(pipefd[1]);
+        break;
+    }
     }
 }
 
@@ -116,10 +153,9 @@ int main()
     {
         read(c2s, &numberOfChars_rec, sizeof(numberOfChars_rec));
         // reseting the buffer
-        printf("read1\n");
+
         memset(currCommand, 0, sizeof(currCommand));
         bytes_read = read(c2s, &currCommand, numberOfChars_rec);
-        printf("read2\n");
 
         if (bytes_read <= 0)
             break;
