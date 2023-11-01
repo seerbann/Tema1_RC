@@ -59,6 +59,16 @@ void init()
         printf("s2c not working\n");
     printf("Connection enabled. \n");
 }
+void sendMessageToClient(const char *message)
+{
+    printf("sending a message to client\n");
+    int messageLength = strlen(message);
+    if (write(s2c, &messageLength, 4) == -1)
+        printf("error line 70\n");
+
+    if (write(s2c, message, messageLength) == -1)
+        printf("error line 72");
+}
 
 void login()
 {
@@ -86,20 +96,28 @@ void login()
     }
     case 0: // copil
     {
-        sleep(1);
-        char userChild[]="default";
+        char userChild[] = "default";
         close(pipefd[1]); // doar citeste
         memset(userChild, 0, sizeof(userChild));
         read(pipefd[0], userChild, 10);
         userChild[strlen(userChild)] = '\0';
         printf("citit de copil %s\n ", userChild);
+        // verificare user
+        readUsersFromFile();
+        if (isUser(userChild) == true)
+        {
+            sendMessageToClient("you logged in succesfully.\n");
+            logged_in = true;
+        }
+        else
+            sendMessageToClient("invalid username!\n");
         close(pipefd[0]);
         break;
     }
     default:
     {                     // parinte
         close(pipefd[0]); // doar scriem
-        
+
         char userTyped[] = "default";
         int numberOfChars_rec;
         printf("IM in PARENT proc\n");
@@ -128,17 +146,6 @@ void login()
     }
 }
 
-void sendMessageToClient(const char *message)
-{
-    printf("sending a message to client\n");
-    int messageLength = strlen(message);
-    if (write(s2c, &messageLength, 4) == -1)
-        printf("error line 70\n");
-
-    if (write(s2c, message, messageLength) == -1)
-        printf("error line 72");
-}
-
 int ok = 1;
 int main()
 {
@@ -161,9 +168,12 @@ int main()
             break;
         currCommand[strlen(currCommand)] = '\0';
         /* If we read quit, quit; otherwise print valid comand */
-        if (strcmp(currCommand, "login") == 0)
+        if ((strcmp(currCommand, "login") == 0))
         {
-            login();
+            if (logged_in == false)
+                login();
+            else
+                sendMessageToClient("already logged. please log out first\n");
         }
 
         else if (strcmp(currCommand, "get-logged-users") == 0)
