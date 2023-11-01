@@ -49,12 +49,11 @@ int main()
             int messageLength = 0, bytes = -1;
             if (read(s2c, &messageLength, 4) == -1)
                 printf("problem reading messageLength\n");
-                printf("read1 client\n");
+
             // Read the message
             char message[messageLength + 1]; // +1 for null-terminator
             if (read(s2c, message, messageLength) == -1)
                 printf("error line 57\n");
-                printf("read2 in client\n");
             message[messageLength] = '\0'; // Null-terminate the received message
             printf("%s\n", message);
         }
