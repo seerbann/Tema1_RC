@@ -3,7 +3,8 @@
         "*.tcc": "cpp",
         "iostream": "cpp",
         "system_error": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "utmp": "cpp"
     },
     "C_Cpp.errorSquiggles": "disabled"
 }
