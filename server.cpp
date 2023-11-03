@@ -146,14 +146,22 @@ void login()
     }
 }
 
+void logout()
+{
+    if (logged_in == true)
+    {
+        logged_in = false;
+        sendMessageToClient("Succesfully logged out\n");
+    } else
+        sendMessageToClient("You are not logged in\n");
+}
+
 int ok = 1;
 int main()
 {
     init();
-    /* Main server loop */
 
     char currCommand[50] = "";
-    char newCurrCommand[] = "";
     int bytes_read;
     int numberOfChars_rec = 0;
     while (strcmp(currCommand, "quit") != 0)
@@ -167,7 +175,8 @@ int main()
         if (bytes_read <= 0)
             break;
         currCommand[strlen(currCommand)] = '\0';
-        /* If we read quit, quit; otherwise print valid comand */
+
+
         if ((strcmp(currCommand, "login") == 0))
         {
             if (logged_in == false)
@@ -181,7 +190,7 @@ int main()
         else if (strcasecmp(currCommand, "get-proc-info") == 0)
             sendMessageToClient("[server] getting info..\n");
         else if (strcasecmp(currCommand, "logout") == 0)
-            sendMessageToClient("[server]logging out..\n");
+            logout();
         else if (strcasecmp(currCommand, "quit") == 0)
             sendMessageToClient("[server]quiting\n");
 
