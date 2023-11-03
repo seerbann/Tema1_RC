@@ -22,22 +22,18 @@ int c2s;
 int s2c;
 char users[50][50];
 int usersCount = 0;
-int readUsersFromFile()
+void readUsersFromFile()
 {
     FILE *file = fopen("users.txt", "r");
     if (file == NULL)
     {
-        printf("File could not be opened\n");
-        return -1;
+        printf("error in opening file\n");
     }
 
-    while (usersCount < 50 && fscanf(file, "%49s", users[usersCount]) == 1)
-    {
+    while (fscanf(file, "%s", users[usersCount]) == 1)
         usersCount++;
-    }
-
+    
     fclose(file);
-    return usersCount; // Return the number of users read
 }
 
 bool isUser(const char *username)
@@ -65,7 +61,7 @@ void init()
 }
 void sendMessageToClient(const char *message)
 {
-    printf("sending a message to client\n");
+    printf("[server]sending a message to client\n");
     int messageLength = strlen(message);
     if (write(s2c, &messageLength, 4) == -1)
         printf("error line 70\n");
@@ -138,7 +134,7 @@ void login()
             {
                 printf("user entered: ");
                 userTyped[strlen(userTyped)] = '\0';
-                printf("%s", userTyped);
+                printf("%s\n", userTyped);
                 ok = 0;
                 // scriere user catre proces copil prin pipe
                 write(pipefd[1], userTyped, numberOfChars_rec);
@@ -200,8 +196,8 @@ void getLoggedUsers()
     {
         char user[20];
         close(sockp[1]);
-        if (read(sockp[0], user, sizeof(user)) < 0)
-            perror("[parinte]Err...write");
+        if (read(sockp[0], user, sizeof(user)) == -1)
+            printf("[parinte]Err...write");
         printf("%s", user);
         sendMessageToClient((const char *)user);
         close(sockp[0]);
@@ -209,10 +205,9 @@ void getLoggedUsers()
     }
 }
 
+//not done
 void getProcInfo()
-{
-
-    
+{    
     int ok = 1;
     char message[] = "Enter pid:";
     int messageLength = strlen(message);
@@ -269,7 +264,7 @@ void getProcInfo()
             bytes_read = read(c2s, pidTyped, numberOfChars_rec);
             if (bytes_read != 0)
             {
-                printf("user entered: ");
+                printf("pid entered: ");
                 pidTyped[strlen(pidTyped)] = '\0';
                 printf("%s", pidTyped);
                 ok = 0;
