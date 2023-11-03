@@ -10,7 +10,10 @@
 #include <strings.h>
 #include <fstream>
 #include <iostream>
+#include <utmp.h>
+#include <time.h>
 using namespace std;
+
 bool logged_in = false;
 const char *FIFOc2s = "FIFOc2s";
 const char *FIFOs2c = "FIFOs2c";
@@ -152,10 +155,28 @@ void logout()
     {
         logged_in = false;
         sendMessageToClient("Succesfully logged out\n");
-    } else
+    }
+    else
         sendMessageToClient("You are not logged in\n");
 }
 
+void getLoggedUsers()
+{
+    struct utmp *myUtmp;
+    int ok = 1;
+    while ((myUtmp = getutent()) != nullptr && ok == 1)
+    {
+        if (myUtmp->ut_type == USER_PROCESS)
+        {
+            printf("User: %s\n", myUtmp->ut_user);
+            ok = 0;
+        }
+    }
+}
+
+void getProcInfo(){
+
+}
 int ok = 1;
 int main()
 {
@@ -176,7 +197,6 @@ int main()
             break;
         currCommand[strlen(currCommand)] = '\0';
 
-
         if ((strcmp(currCommand, "login") == 0))
         {
             if (logged_in == false)
@@ -186,7 +206,7 @@ int main()
         }
 
         else if (strcmp(currCommand, "get-logged-users") == 0)
-            sendMessageToClient("[server] getting info..\n");
+            getLoggedUsers();
         else if (strcasecmp(currCommand, "get-proc-info") == 0)
             sendMessageToClient("[server] getting info..\n");
         else if (strcasecmp(currCommand, "logout") == 0)
