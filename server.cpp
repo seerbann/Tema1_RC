@@ -12,6 +12,7 @@
 #include <iostream>
 #include <utmp.h>
 #include <time.h>
+#include <sys/socket.h>
 using namespace std;
 
 bool logged_in = false;
@@ -162,20 +163,124 @@ void logout()
 
 void getLoggedUsers()
 {
-    struct utmp *myUtmp;
-    int ok = 1;
-    while ((myUtmp = getutent()) != nullptr && ok == 1)
+    int sockp[2];
+    if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockp) == -1)
     {
-        if (myUtmp->ut_type == USER_PROCESS)
+        printf("error creating socket\n");
+    }
+    switch (fork())
+    {
+    case -1:
+    {
+        printf("error in fork linia 174\n");
+        break;
+    }
+
+    case 0: // copil
+    {
+        close(sockp[0]);
+        struct utmp *myUtmp;
+        int ok = 1;
+        char user[32] = "";
+        while ((myUtmp = getutent()) != nullptr && ok == 1)
         {
-            printf("User: %s\n", myUtmp->ut_user);
-            ok = 0;
+            if (myUtmp->ut_type == USER_PROCESS)
+            {
+                printf("User: %s\n", myUtmp->ut_user);
+                strcpy(user, myUtmp->ut_user);
+                ok = 0;
+            }
         }
+        if (write(sockp[1], user, 20) == -1)
+            printf("errorr line 195");
+        printf("[copil]  %s\n", user);
+        close(sockp[1]);
+    }
+    default:
+    {
+        char user[20];
+        close(sockp[1]);
+        if (read(sockp[0], user, sizeof(user)) < 0)
+            perror("[parinte]Err...write");
+        printf("%s", user);
+        sendMessageToClient((const char *)user);
+        close(sockp[0]);
+    }
     }
 }
 
-void getProcInfo(){
+void getProcInfo()
+{
 
+    
+    int ok = 1;
+    char message[] = "Enter pid:";
+    int messageLength = strlen(message);
+    if (write(s2c, &messageLength, 4) == -1)
+        printf("error line 70\n");
+
+    if (write(s2c, message, sizeof(message)) == -1)
+        printf("error line 72");
+
+    pid_t childProcess;
+    int pipefd[2];
+    if (pipe(pipefd) == -1)
+        exit(errno);
+    // 1 write
+    // 0 read
+    switch (childProcess = fork())
+    {
+    case -1:
+    {
+        printf("eroare la fork");
+        break;
+    }
+    case 0: // copil
+    {
+        char pidChild[] = "default";
+        close(pipefd[1]); // doar citeste
+        memset(pidChild, 0, sizeof(pidChild));
+        read(pipefd[0], pidChild, 10);
+        pidChild[strlen(pidChild)] = '\0';
+        printf("citit de copil %s\n ", pidChild);
+        // verificare pid
+        sendMessageToClient("pid citit\n");
+        
+        
+        
+        close(pipefd[0]);
+        break;
+    }
+    default:
+    {                     // parinte
+        close(pipefd[0]); // doar scriem
+
+        char pidTyped[] = "default";
+        int numberOfChars_rec;
+        printf("IM in PARENT proc\n");
+        while (ok == 1)
+        {
+
+            int bytes_read = 0;
+            // citire pid scris de client
+            read(c2s, &numberOfChars_rec, sizeof(numberOfChars_rec));
+
+            memset(pidTyped, 0, sizeof(pidTyped));
+            bytes_read = read(c2s, pidTyped, numberOfChars_rec);
+            if (bytes_read != 0)
+            {
+                printf("user entered: ");
+                pidTyped[strlen(pidTyped)] = '\0';
+                printf("%s", pidTyped);
+                ok = 0;
+                // scriere user catre proces copil prin pipe
+                write(pipefd[1], pidTyped, numberOfChars_rec);
+            }
+        }
+        close(pipefd[1]);
+        break;
+    }
+    }
 }
 int ok = 1;
 int main()
@@ -196,26 +301,39 @@ int main()
         if (bytes_read <= 0)
             break;
         currCommand[strlen(currCommand)] = '\0';
-
-        if ((strcmp(currCommand, "login") == 0))
+        switch (logged_in)
         {
-            if (logged_in == false)
+        case false:
+            if ((strcmp(currCommand, "login") == 0))
+            {
                 login();
+            }
+            else if (strcasecmp(currCommand, "quit") == 0)
+                sendMessageToClient("[server]quiting\n");
+
             else
+                sendMessageToClient("[server] invalid request\n");
+            break;
+
+        default: // true
+            if ((strcmp(currCommand, "login") == 0))
+            {
                 sendMessageToClient("already logged. please log out first\n");
+            }
+            else if (strcmp(currCommand, "get-logged-users") == 0)
+                getLoggedUsers();
+            else if (strcasecmp(currCommand, "get-proc-info") == 0)
+                getProcInfo();
+            else if (strcasecmp(currCommand, "logout") == 0)
+                logout();
+            else if (strcasecmp(currCommand, "quit") == 0)
+                sendMessageToClient("[server]quiting\n");
+
+            else
+                sendMessageToClient("[server] invalid request\n");
+
+            break;
         }
-
-        else if (strcmp(currCommand, "get-logged-users") == 0)
-            getLoggedUsers();
-        else if (strcasecmp(currCommand, "get-proc-info") == 0)
-            sendMessageToClient("[server] getting info..\n");
-        else if (strcasecmp(currCommand, "logout") == 0)
-            logout();
-        else if (strcasecmp(currCommand, "quit") == 0)
-            sendMessageToClient("[server]quiting\n");
-
-        else
-            sendMessageToClient("[server] invalid request\n");
     }
     printf("[server]quiting\n");
     /* close and delete the c2s FIFO */
