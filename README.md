@@ -24,7 +24,7 @@ clienti fie ei obisnuiti sau administratori.
 
 **Diagrama flow-ului**
 
-<img src="/media/image.png" style="width:5in;height:3.03125in" />
+<img src="/images/CAPTURE.PNG" style="width:5in;height:3.03125in" />
 
 Clientul 3 este un client administrator , pe cand 1 si 2 sunt clienti
 obisnuiti.
