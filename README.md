@@ -24,7 +24,7 @@ clienti fie ei obisnuiti sau administratori.
 
 **Diagrama flow-ului**
 
-<img src="/images/CAPTURE.PNG" style="width:5in;height:3.03125in" />
+<img src="images/Capture.PNG" style="width:5in;height:3.03125in" />
 
 Clientul 3 este un client administrator , pe cand 1 si 2 sunt clienti
 obisnuiti.
@@ -36,7 +36,7 @@ obisnuiti.
 Protocolul TCP implementat este concurent, serverul creând cate un
 proces copil pentru fiecare client.
 
-<img src="/media/image2.png" style="width:3.55208in;height:5in" />
+<img src="images/Capture2.PNG" style="width:3.55208in;height:5in" />
 
 -\>**SERVER SIDE**
 
@@ -111,7 +111,7 @@ date.
 
 Model:
 
-<img src="/media/image3.png" style="width:5in;height:0.91667in" />
+<img src="images/Capture3.PNG" style="width:5in;height:0.91667in" />
 
 **Bibliografie**
 
