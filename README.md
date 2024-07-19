@@ -36,7 +36,7 @@ obisnuiti.
 Protocolul TCP implementat este concurent, serverul creând cate un
 proces copil pentru fiecare client.
 
-<img src="/media/image2.png" style="width:3.55208in;height:5in" />
+<img src="images/Capture2.PNG" style="width:3.55208in;height:5in" />
 
 -\>**SERVER SIDE**
 
