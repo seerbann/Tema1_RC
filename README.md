@@ -111,7 +111,7 @@ date.
 
 Model:
 
-<img src="/media/image3.png" style="width:5in;height:0.91667in" />
+<img src="images/Capture3.PNG" style="width:5in;height:0.91667in" />
 
 **Bibliografie**
 
